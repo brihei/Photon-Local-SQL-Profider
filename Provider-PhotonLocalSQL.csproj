@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Provider_PhotonLocalSQL</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\Photon\Photon Gateway.csproj" />
+	</ItemGroup>
+
+	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
+		<Exec Command="xcopy /Y &quot;$(TargetDir)*.dll&quot; &quot;$(SolutionDir)Photon\bin\Debug\net8.0\&quot;" />
+		<Exec Command="xcopy /Y &quot;$(TargetDir)*.pdb&quot; &quot;$(SolutionDir)Photon\bin\Debug\net8.0\&quot;" />
+	</Target>
+	
+</Project>
