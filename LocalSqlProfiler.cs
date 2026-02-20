@@ -13,14 +13,14 @@ namespace Photon.Core.Identity.Providers
     public class LocalSqlProfiler(IConfiguration config) : IIdentityProfiler
     {
 
+        //WhoAmI?
         public string ProfilerSource => "LOCAL";
 
+        /// <summary>
+        /// Add defaults to the Photon configuration HotState and EAV if they are missing.
+        /// </summary>
         public async Task ProcessConfig()
         {
-            // Summary of function: Seeding News module defaults.
-            // Remarks: Runs via reflection during Gateway ignition.
-            //await Config.System<int>($"{PluginName}.MaxToShowFirst", 5);
-            Console.Write(">>> [LOCAL SQL IDENTITY PROVIDER] Loaded");
             await ConfigurationManager<object>.SetDefaultData<bool>($"IdentityProviders.Local.Acivated", true, "Enable the local SQL provider. If no other identity provider is enabled and this is disabled, no one will be able to log into the gateway.");
         }
 
@@ -33,19 +33,18 @@ namespace Photon.Core.Identity.Providers
         public async Task<IdentityProfileResult> AuthenticateAsync(string username, string password)
         {
 
-            // Activated? Don't turn this one off if everything else is off... that would mean no one can log in to the system at all
+            // Activated? Don't turn this one off if everything else is off... that would mean no one can log in to the system at all!
             if (!await Config.System<bool>($"IdentityProviders.Local.Acivated"))
             {
-                Console.Write(">>> [LOCAL SQL IDENTITY PROVIDER] Disabled");
+                Console.Write(">>> [LOCAL SQL IDENTITY PROVIDER] Disabled"); //Photon grabs these and logs them but also shows this on startup. This will not stop the gateway from starting up.
                 return new IdentityProfileResult { IsSuccess = false };
             }
 
-            // Instantate the connection using the gateway Public Dispatcher ISqlDispatcher found in Globals
-            // well use QueryFirstOrDefaultAsync with TableModel_Auth to align username and appsword
+            // Get the Globals.PrimaryDispatcher to execute. Provides connection and telemetry.
             var _dispatcher = Globals.PrimaryDispatcher;
-
             var userRecord = await _dispatcher.QueryFirstOrDefaultAsync<TableModel_Auth>(@"SELECT UserId, Password, EmailAddress, DisplayName FROM {prefix}Auth WHERE UserName = @u AND Enabled = 1", new { u = username });
-
+            
+            // Return the result back as IdentityProfileResult if it validates
             if (userRecord != null && VerifyPassword(password, userRecord.Password))
             {
                 return new IdentityProfileResult
@@ -57,6 +56,8 @@ namespace Photon.Core.Identity.Providers
                     DisplayName = userRecord.DisplayName
                 };
             }
+
+            // return this if nothing is found
             return new IdentityProfileResult { IsSuccess = false };
         }
 
@@ -68,7 +69,9 @@ namespace Photon.Core.Identity.Providers
         /// <returns></returns>
         private bool VerifyPassword(string input, string hashed)
         {
+            //Compare the input and against the hashed to get a match. Depending on the config, this could be salted -or- someone changeed the algorithm or salt to force password changes.
             return Security.Cryptography.HashPassword(input).ToUpper() == hashed.ToUpper();
         }
     }
 }
+
